@@ -14,7 +14,9 @@ import { db } from "../firebase";
 function RigaFattura({ riga, onRigaChange, onRigaDelete }) {
   const [articoli, setArticoli] = useState([]);
   const [codiceArticolo, setCodiceArticolo] = useState(riga.codiceArticolo || "");
-  const [descrizioneArticolo, setDescrizioneArticolo] = useState(riga.descrizioneArticolo || "");
+  const [descrizioneArticolo, setDescrizioneArticolo] = useState(
+    riga.descrizioneArticolo || ""
+  );
 
   useEffect(() => {
     const fetchArticoli = async () => {
@@ -36,7 +38,7 @@ function RigaFattura({ riga, onRigaChange, onRigaDelete }) {
 
   const handleArticoloChange = (event) => {
     const articoloSelezionato = articoli.find(
-      (articolo) => articolo.codice === event.target.value
+      (articolo) => articolo.codice === event.target.value,
     );
     if (articoloSelezionato) {
       // Se l'articolo è presente nel database, usa i suoi dati
@@ -47,9 +49,9 @@ function RigaFattura({ riga, onRigaChange, onRigaDelete }) {
         descrizioneArticolo: articoloSelezionato.descrizione,
         prezzoNetto: articoloSelezionato.prezzoNetto,
         iva: articoloSelezionato.iva,
-        prezzoLordo:
+        prezzoLordo: Number (
           articoloSelezionato.prezzoNetto *
-          (1 + articoloSelezionato.iva / 100),
+          (1 + articoloSelezionato.iva / 100)), // Prezzo lordo unitario
       });
       setCodiceArticolo(articoloSelezionato.codice);
       setDescrizioneArticolo(articoloSelezionato.descrizione);
@@ -60,33 +62,27 @@ function RigaFattura({ riga, onRigaChange, onRigaDelete }) {
         articoloId: null, // Nessun articoloId se inserito manualmente
         codiceArticolo: codiceArticolo,
         descrizioneArticolo: descrizioneArticolo,
-        prezzoLordo:
-          parseFloat(riga.prezzoNetto) * (1 + parseFloat(riga.iva) / 100) || 0,
+        prezzoLordo: Number (
+          parseFloat(riga.prezzoNetto) * (1 + parseFloat(riga.iva) / 100)) || 0, // Conversione a numero
       });
     }
   };
 
   const handleQuantitaChange = (event) => {
     const nuovaQuantita = parseInt(event.target.value) || 0;
-    const nuovoPrezzoLordo = (
-      riga.prezzoNetto *
-      (1 + riga.iva / 100) *
-      nuovaQuantita
-    ).toFixed(2);
-    onRigaChange({ ...riga, quantita: nuovaQuantita, prezzoLordo: nuovoPrezzoLordo });
+    onRigaChange({ ...riga, quantita: nuovaQuantita }); // Invia solo la quantità
   };
 
   const handlePrezzoNettoChange = (event) => {
     const nuovoPrezzoNetto = parseFloat(event.target.value) || 0;
     const nuovoPrezzoLordo = (
       nuovoPrezzoNetto *
-      (1 + riga.iva / 100) *
-      riga.quantita
-    ).toFixed(2);
+      (1 + riga.iva / 100)
+    ).toFixed(2); // Prezzo lordo unitario
     onRigaChange({
       ...riga,
       prezzoNetto: nuovoPrezzoNetto,
-      prezzoLordo: nuovoPrezzoLordo,
+      prezzoLordo: Number (nuovoPrezzoLordo), // Invia solo il prezzo lordo unitario
     });
   };
 
@@ -94,10 +90,13 @@ function RigaFattura({ riga, onRigaChange, onRigaDelete }) {
     const nuovaIva = parseFloat(event.target.value) || 0;
     const nuovoPrezzoLordo = (
       riga.prezzoNetto *
-      (1 + nuovaIva / 100) *
-      riga.quantita
-    ).toFixed(2);
-    onRigaChange({ ...riga, iva: nuovaIva, prezzoLordo: nuovoPrezzoLordo });
+      (1 + nuovaIva / 100)
+    ).toFixed(2); // Prezzo lordo unitario
+    onRigaChange({
+      ...riga,
+      iva: nuovaIva,
+      prezzoLordo: Number (nuovoPrezzoLordo), // Invia solo il prezzo lordo unitario
+    });
   };
 
   return (
@@ -124,7 +123,7 @@ function RigaFattura({ riga, onRigaChange, onRigaDelete }) {
         value={codiceArticolo}
         onChange={(e) => {
           setCodiceArticolo(e.target.value);
-          onRigaChange({ ...riga, codiceArticolo: e.target.value })
+          onRigaChange({ ...riga, codiceArticolo: e.target.value });
         }}
         sx={{ mr: 2, width: 100 }}
       />

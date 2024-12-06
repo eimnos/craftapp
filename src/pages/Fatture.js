@@ -12,29 +12,25 @@ import {
   TableSortLabel,
   Box,
   Popover,
-  ButtonGroup,
   Modal,
-  IconButton
 } from "@mui/material";
 import { collection, getDocs, getDoc, doc, query, where } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import FatturaForm from "../components/FatturaForm";
-import Toolbar from "../components/Toolbar"; // Importa il componente Toolbar
-
+import Toolbar from "../components/Toolbar";
 
 const style = {
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: 1400,
-  bgcolor: 'background.paper',
-  border: '2px solid #000',
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: 1400, // Larghezza della modale
+  bgcolor: "background.paper",
+  border: "2px solid #000",
   boxShadow: 24,
   p: 4,
 };
-
 
 function Fatture() {
   const [fatture, setFatture] = useState([]);
@@ -47,12 +43,12 @@ function Fatture() {
   const [colonnaFiltroAperta, setColonnaFiltroAperta] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
-  const [user] = useAuthState(auth); 
+  const [user] = useAuthState(auth);
 
   const bottoniFatture = [
-    { 
-      label: "Nuova Fattura", 
-      onClick: () => setOpenForm(true)  // Apri il form 
+    {
+      label: "Nuova Fattura",
+      onClick: () => setOpenForm(true), // Apri il form
     },
   ];
 
@@ -60,13 +56,22 @@ function Fatture() {
     const fetchFatture = async () => {
       try {
         const fattureRef = collection(db, "fatture");
-        
-        const q = user 
-        ? query(fattureRef, where("userId", "==", user.uid)) 
-        : fattureRef;
-        
+
+        const q = user
+          ? query(fattureRef, where("userId", "==", user.uid))
+          : fattureRef;
+
         const fattureSnapshot = await getDocs(q);
-      
+
+        console.log(fattureSnapshot.docs)
+
+        // Recupera tutte le righe dal database
+        const righeRef = collection(db, "righeFattura");
+        const righeSnapshot = await getDocs(righeRef);
+        const righeData = righeSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
         const fattureData = await Promise.all(
           fattureSnapshot.docs.map(async (docSnapshot) => {
@@ -75,12 +80,32 @@ function Fatture() {
             const tipoFatturaSnapshot = await getDoc(tipoFatturaRef);
             const tipoFatturaData = tipoFatturaSnapshot.data();
 
+            // Filtra le righe per la fattura corrente
+            const righeFattura = righeData.filter(
+              (riga) => {const fatturaId = riga.fatturaId.id; // Ottieni l'ID dalla proprietà id
+                return fatturaId === docSnapshot.id;
+              }
+            );
+
+            // Calcola i totali per la fattura corrente
+            const totaleNetto = righeFattura.reduce(
+              (acc, riga) => acc + riga.prezzoNetto * riga.quantita,
+              0,
+            );
+            const totaleLordo = righeFattura.reduce(
+              (acc, riga) => acc + riga.prezzoLordo * riga.quantita,
+              0,
+            );
+
             return {
               id: docSnapshot.id,
               ...fatturaData,
-              descrizioneTipo: tipoFatturaData?.Descrizione || "Tipo non trovato",
+              descrizioneTipo:
+                tipoFatturaData?.Descrizione || "Tipo non trovato",
+              totaleNetto,
+              totaleLordo,
             };
-          })
+          }),
         );
 
         setFatture(fattureData);
@@ -90,7 +115,7 @@ function Fatture() {
     };
 
     fetchFatture();
-  }, []);
+  }, [user]);
 
   const handleCloseForm = () => {
     setOpenForm(false);
@@ -131,7 +156,7 @@ function Fatture() {
         return String(fattura[colonna])
           .toLowerCase()
           .includes(valore.toLowerCase());
-      })
+      }),
     )
     .sort((a, b) => {
       if (ordinamento.colonna) {
@@ -147,10 +172,7 @@ function Fatture() {
 
   return (
     <div>
-      {/* Menu con i bottoni */}
       <Toolbar buttons={bottoniFatture} />
-
-      {openForm && <FatturaForm onClose={handleCloseForm} />}
 
       <Modal
         open={openForm}
@@ -159,7 +181,7 @@ function Fatture() {
         aria-describedby="modal-modal-description"
       >
         <Box sx={style}>
-          <FatturaForm onClose={() => setOpenForm(false)} /> {/* Form per nuova fattura */}
+          <FatturaForm onClose={() => setOpenForm(false)} />
         </Box>
       </Modal>
 
@@ -291,7 +313,8 @@ function Fatture() {
                   />
                 </Popover>
               </TableCell>
-              {/* ... altre colonne ... */}
+              <TableCell>Totale Netto</TableCell>
+              <TableCell>Totale Lordo</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -301,7 +324,8 @@ function Fatture() {
                 <TableCell>{fattura.dataEmissione}</TableCell>
                 <TableCell>{fattura.cliente}</TableCell>
                 <TableCell>{fattura.descrizioneTipo}</TableCell>
-                {/* ... altre colonne ... */}
+                <TableCell>{fattura.totaleNetto.toFixed(2)}</TableCell>
+                <TableCell>{fattura.totaleLordo.toFixed(2)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
