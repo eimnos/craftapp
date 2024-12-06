@@ -9,6 +9,7 @@ import {
   MenuItem,
   InputLabel,
   FormControl,
+  IconButton
 } from "@mui/material";
 import {
   addDoc,
@@ -21,6 +22,7 @@ import { db, auth } from "../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { v4 as uuidv4 } from "uuid";
 import RigaFattura from "./RigaFattura";
+import CloseIcon from '@mui/icons-material/Close'; // Importa l'icona di chiusura
 
 function FatturaForm({ onClose }) {
   const [user] = useAuthState(auth);
@@ -157,133 +159,141 @@ function FatturaForm({ onClose }) {
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
-      {/* Menu a tendina per il tipo di fattura */}
-      <FormControl fullWidth margin="normal" required>
-        <InputLabel id="tipo-label">Tipo</InputLabel>
-        <Select
-          labelId="tipo-label"
-          id="tipo"
-          label="Tipo"
-          value={tipo}
-          onChange={e => setTipo(e.target.value)}
-        >
-          {tipiFattura.map((tipo) => (
-            <MenuItem key={tipo.id} value={tipo.id}>
-              {tipo.Descrizione}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+    <div>
+      <IconButton 
+          aria-label="close" 
+          onClick={onClose} 
+          sx={{ position: 'absolute', top: 8, right: 8 }} >
+          <CloseIcon />
+        </IconButton>
+      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+        {/* Menu a tendina per il tipo di fattura */}
+        <FormControl fullWidth margin="normal" required>
+          <InputLabel id="tipo-label">Tipo</InputLabel>
+          <Select
+            labelId="tipo-label"
+            id="tipo"
+            label="Tipo"
+            value={tipo}
+            onChange={e => setTipo(e.target.value)}
+          >
+            {tipiFattura.map((tipo) => (
+              <MenuItem key={tipo.id} value={tipo.id}>
+                {tipo.Descrizione}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        id="numeroFattura"
-        label="Numero Fattura"
-        name="numeroFattura"
-        value={numeroFattura}
-        onChange={(e) => setNumeroFattura(e.target.value)}
-      />
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        id="dataEmissione"
-        label="Data Emissione"
-        name="dataEmissione"
-        value={dataEmissione}
-        onChange={(e) => setDataEmissione(e.target.value)}
-      />
-      <TextField
-        margin="normal"
-        required
-        fullWidth
-        id="cliente"
-        label="Cliente"
-        name="cliente"
-        value={cliente}
-        onChange={(e) => setCliente(e.target.value)}
-      />
-
-      {/* Righe della fattura */}
-      {righeFattura.map((riga) => (
-        <RigaFattura
-          key={riga.id}
-          riga={riga}
-          articoli={articoli}
-          onRigaChange={(nuovaRiga) =>
-            setRigheFattura((prevRighe) =>
-              prevRighe.map((r) => (r.id === nuovaRiga.id ? nuovaRiga : r))
-            )
-          }
-          onRigaDelete={(rigaId) =>
-            setRigheFattura((prevRighe) =>
-              prevRighe.filter((r) => r.id !== rigaId)
-            )
-          }
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="numeroFattura"
+          label="Numero Fattura"
+          name="numeroFattura"
+          value={numeroFattura}
+          onChange={(e) => setNumeroFattura(e.target.value)}
         />
-      ))}
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="dataEmissione"
+          label="Data Emissione"
+          name="dataEmissione"
+          value={dataEmissione}
+          onChange={(e) => setDataEmissione(e.target.value)}
+        />
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="cliente"
+          label="Cliente"
+          name="cliente"
+          value={cliente}
+          onChange={(e) => setCliente(e.target.value)}
+        />
 
-      {/* Bottone per aggiungere una nuova riga */}
-      <Button
-        variant="contained"
-        onClick={() =>
-          setRigheFattura([
-            ...righeFattura,
-            {
-              id: uuidv4(),
-              articoloId: "",
-              quantita: 1,
-              prezzoNetto: 0,
-              iva: 0,
-              prezzoLordo: 0,
-            },
-          ])
-        }
-      >
-        Aggiungi riga
-      </Button>
+        {/* Righe della fattura */}
+        {righeFattura.map((riga) => (
+          <RigaFattura
+            key={riga.id}
+            riga={riga}
+            articoli={articoli}
+            onRigaChange={(nuovaRiga) =>
+              setRigheFattura((prevRighe) =>
+                prevRighe.map((r) => (r.id === nuovaRiga.id ? nuovaRiga : r))
+              )
+            }
+            onRigaDelete={(rigaId) =>
+              setRigheFattura((prevRighe) =>
+                prevRighe.filter((r) => r.id !== rigaId)
+              )
+            }
+          />
+        ))}
 
-      <Button
-        type="submit"
-        fullWidth
-        variant="contained"
-        sx={{ mt: 3, mb: 2 }}
-        disabled={isLoading}
-      >
-        {isLoading ? "Inserimento..." : "Inserisci"}
-      </Button>
-
-      <Snackbar
-        open={successMessage !== null}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity="success"
-          sx={{ width: "100%" }}
+        {/* Bottone per aggiungere una nuova riga */}
+        <Button
+          variant="contained"
+          onClick={() =>
+            setRigheFattura([
+              ...righeFattura,
+              {
+                id: uuidv4(),
+                articoloId: "",
+                quantita: 1,
+                prezzoNetto: 0,
+                iva: 0,
+                prezzoLordo: 0,
+              },
+            ])
+          }
         >
-          {successMessage}
-        </Alert>
-      </Snackbar>
+          Aggiungi riga
+        </Button>
 
-      <Snackbar
-        open={errorMessage !== null}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity="error"
-          sx={{ width: "100%" }}
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          sx={{ mt: 3, mb: 2 }}
+          disabled={isLoading}
         >
-          {errorMessage}
-        </Alert>
-      </Snackbar>
-    </Box>
+          {isLoading ? "Inserimento..." : "Inserisci"}
+        </Button>
+
+        <Snackbar
+          open={successMessage !== null}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+        >
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity="success"
+            sx={{ width: "100%" }}
+          >
+            {successMessage}
+          </Alert>
+        </Snackbar>
+
+        <Snackbar
+          open={errorMessage !== null}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+        >
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity="error"
+            sx={{ width: "100%" }}
+          >
+            {errorMessage}
+          </Alert>
+        </Snackbar>
+      </Box>
+    </div>
   );
 }
 

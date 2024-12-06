@@ -13,11 +13,27 @@ import {
   Box,
   Popover,
   ButtonGroup,
+  Modal,
+  IconButton
 } from "@mui/material";
 import { collection, getDocs, getDoc, doc, query, where } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import FatturaForm from "../components/FatturaForm";
+import Toolbar from "../components/Toolbar"; // Importa il componente Toolbar
+
+
+const style = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: 1400,
+  bgcolor: 'background.paper',
+  border: '2px solid #000',
+  boxShadow: 24,
+  p: 4,
+};
 
 
 function Fatture() {
@@ -32,6 +48,13 @@ function Fatture() {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const [user] = useAuthState(auth); 
+
+  const bottoniFatture = [
+    { 
+      label: "Nuova Fattura", 
+      onClick: () => setOpenForm(true)  // Apri il form 
+    },
+  ];
 
   useEffect(() => {
     const fetchFatture = async () => {
@@ -125,12 +148,20 @@ function Fatture() {
   return (
     <div>
       {/* Menu con i bottoni */}
-      <ButtonGroup variant="contained" aria-label="outlined primary button group">
-        <Button onClick={() => setOpenForm(true)}>Nuova Fattura</Button>
-        {/* ... altri bottoni ... */}
-      </ButtonGroup>
+      <Toolbar buttons={bottoniFatture} />
 
       {openForm && <FatturaForm onClose={handleCloseForm} />}
+
+      <Modal
+        open={openForm}
+        onClose={() => setOpenForm(false)}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box sx={style}>
+          <FatturaForm onClose={() => setOpenForm(false)} /> {/* Form per nuova fattura */}
+        </Box>
+      </Modal>
 
       <TableContainer component={Paper}>
         <Table>

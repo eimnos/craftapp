@@ -9,10 +9,11 @@ function Toolbar({ buttons }) {
         alignItems: "center",
         marginBottom: 2,
         padding: 2,
+
       }}
     >
       {buttons.map((button, index) => (
-        <Button key={index} variant="contained" onClick={button.onClick} sx={{ mr: 1 }}> 
+        <Button key={index} variant="contained" onClick={button.onClick} sx={{ mr: 1 , color: "#36535a", fontWeight: "bold" }}> 
           {button.label}
         </Button>
       ))}
