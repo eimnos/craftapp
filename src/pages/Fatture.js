@@ -18,6 +18,7 @@ import { collection, getDocs, getDoc, doc, query, where } from "firebase/firesto
 import { db, auth } from "../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import FatturaForm from "../components/FatturaForm";
+import AnagraficaForm from "../components/AnagraficaForm";
 import Toolbar from "../components/Toolbar";
 
 const style = {
@@ -32,9 +33,22 @@ const style = {
   p: 4,
 };
 
+const styleAnagrafica = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: 1400, // Larghezza della modale
+  bgcolor: "background.paper",
+  border: "2px solid #000",
+  boxShadow: 24,
+  p: 4,
+};
+
 function Fatture() {
   const [fatture, setFatture] = useState([]);
   const [openForm, setOpenForm] = useState(false);
+  const [openAnagraficaForm, setOpenAnagraficaForm] = useState(false); // Stato per la modale dell'anagrafica
   const [filtri, setFiltri] = useState({});
   const [ordinamento, setOrdinamento] = useState({
     colonna: null,
@@ -50,6 +64,10 @@ function Fatture() {
       label: "Nuova Fattura",
       onClick: () => setOpenForm(true), // Apri il form
     },
+    {
+      label: "Nuova Anagrafica",
+      onClick: () => setOpenAnagraficaForm(true), // Apri la modale per l'anagrafica
+    }
   ];
 
   useEffect(() => {
@@ -182,6 +200,17 @@ function Fatture() {
       >
         <Box sx={style}>
           <FatturaForm onClose={() => setOpenForm(false)} />
+        </Box>
+      </Modal>
+
+      <Modal
+        open={openAnagraficaForm}
+        onClose={() => setOpenAnagraficaForm(false)}
+        aria-labelledby="modal-anagrafica-title"
+        aria-describedby="modal-anagrafica-description"
+      >
+        <Box sx={styleAnagrafica}> {/* Definisci lo stile per la modale */}
+          <AnagraficaForm onClose={() => setOpenAnagraficaForm(false)} />
         </Box>
       </Modal>
 
