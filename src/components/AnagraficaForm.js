@@ -18,12 +18,17 @@ function AnagraficaForm({ onClose }) {
   const [descrizione, setDescrizione] = useState("");
   const [partitaIva, setPartitaIva] = useState("");
   const [indirizzo, setIndirizzo] = useState("");
+  const [cap, setCap] = useState("");
+  const [localita, setLocalita] = useState("");
+  const [provincia, setProvincia] = useState("");
+  const [nazione, setNazione] = useState("");
   // ... (altri stati per i campi dell'indirizzo) ...
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     // ... (logica per salvare i dati dell'anagrafica) ...
   };
+
 
   return (
     <div>
@@ -55,6 +60,28 @@ function AnagraficaForm({ onClose }) {
           margin="normal"
           required
           fullWidth
+          id="descrizione"
+          label="Descrizione"
+          name="descrizione"
+          value={descrizione}
+          onChange={(e) => setDescrizione(e.target.value)}
+        />
+
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="partitaIva"
+          label="Partita Iva"
+          name="partitaIva"
+          value={partitaIva}
+          onChange={(e) => setPartitaIva(e.target.value)}
+        />
+
+        <TextField
+          margin="normal"
+          required
+          fullWidth
           id="indirizzo"
           label="Indirizzo sede legale"
           name="indirizzo"
@@ -73,6 +100,7 @@ function AnagraficaForm({ onClose }) {
           Salva
         </Button>
       </Box>
+     
     </div>
   );
 }
