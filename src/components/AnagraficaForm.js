@@ -10,10 +10,15 @@ import {
   IconButton,
   Grid2,
   Typography,
-  Divider
+  Divider,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { formFieldStyle } from "../formStyles";
+import { addDoc, collection } from "firebase/firestore";
+import { db, auth } from "../firebase"; 
+import { useAuthState } from 'react-firebase-hooks/auth';
 // ... (eventuali import per il servizio di ricerca indirizzo) ...
 
 function AnagraficaForm({ onClose }) {
@@ -27,14 +32,52 @@ function AnagraficaForm({ onClose }) {
   const [localita, setLocalita] = useState("");
   const [provincia, setProvincia] = useState("");
   const [nazione, setNazione] = useState("");
+  const [user] = useAuthState(auth); // Ottieni l'utente corrente
+  const [successMessage, setSuccessMessage] = useState(null);
 
   // ... (altri stati per i campi dell'indirizzo) ...
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    // ... (logica per salvare i dati dell'anagrafica) ...
+    
+    try {
+      // Crea un oggetto con i dati da inviare
+      const nuovaAnagrafica = {
+        tipo,
+        codice,
+        descrizione,
+        partitaIva,
+        indirizzo: {
+          via,
+          numeroCivico,
+          cap,
+          localita,
+          provincia,
+          nazione,
+        },
+        userId: user.uid, // Aggiungi l'ID dell'utente
+      };
+    // Invia i dati alla collezione "anagrafiche" in Firestore
+    const docRef = await addDoc(collection(db, "anagrafiche"), nuovaAnagrafica);
+    console.log("Anagrafica creata con ID: ", docRef.id);
+
+    // Eventuale gestione del successo (es. messaggio di successo, chiusura modale)
+    setSuccessMessage("Anagrafica inserita correttamente!");
+    onClose(); // Chiudi la modale dopo l'invio
+
+  } catch (error) {
+    console.error("Errore durante la creazione dell'anagrafica: ", error);
+    // Eventuale gestione dell'errore (es. messaggio di errore)
+  }
   };
 
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setSuccessMessage(null);
+    //setErrorMessage(null);
+  };
 
   return (
     <div>
@@ -205,6 +248,20 @@ function AnagraficaForm({ onClose }) {
           Salva
         </Button>
       </Box>
+
+      <Snackbar
+          open={successMessage !== null}
+          autoHideDuration={6000}
+          onClose={handleCloseSnackbar}
+        >
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity="success"
+            sx={{ width: "100%" }}
+          >
+            {successMessage}
+          </Alert>
+        </Snackbar>
      
     </div>
   );

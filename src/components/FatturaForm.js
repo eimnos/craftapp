@@ -10,6 +10,7 @@ import {
   InputLabel,
   FormControl,
   IconButton,
+  Autocomplete
 } from "@mui/material";
 import {
   addDoc,
@@ -40,6 +41,7 @@ function FatturaForm({ onClose }) {
   const [successMessage, setSuccessMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [anagrafiche, setAnagrafiche] = useState([]);
 
   useEffect(() => {
     const fetchTipiFattura = async () => {
@@ -59,6 +61,7 @@ function FatturaForm({ onClose }) {
       }
     };
 
+
     const fetchArticoli = async () => {
       try {
         const articoliRef = collection(db, "articoli");
@@ -73,8 +76,23 @@ function FatturaForm({ onClose }) {
       }
     };
 
+    const fetchAnagrafiche = async () => {
+      try {
+        const anagraficheRef = collection(db, "anagrafiche");
+        const anagraficheSnapshot = await getDocs(anagraficheRef);
+        const anagraficheData = anagraficheSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setAnagrafiche(anagraficheData); // Salva le anagrafiche nello stato
+      } catch (error) {
+        console.error("Errore durante il recupero delle anagrafiche: ", error);
+      }
+    };
+
     fetchTipiFattura();
     fetchArticoli();
+    fetchAnagrafiche();
   }, []);
 
   const fetchUltimoNumeroFattura = async (tipoFattura) => {
@@ -243,15 +261,21 @@ function FatturaForm({ onClose }) {
           value={dataEmissione}
           onChange={(e) => setDataEmissione(e.target.value)}
         />
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          id="cliente"
-          label="Cliente"
-          name="cliente"
-          value={cliente}
-          onChange={(e) => setCliente(e.target.value)}
+        <Autocomplete
+          options={anagrafiche}
+          getOptionLabel={(anagrafica) => anagrafica.descrizione} // Usa la descrizione come etichetta
+          onChange={(event, newValue) => setCliente(newValue ? doc(db, 'anagrafiche', newValue.id) : null)} // Aggiorna il cliente con il DocumentReference
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              margin="normal"
+              required
+              fullWidth
+              id="cliente"
+              label="Cliente"
+              name="cliente"
+            />
+          )}
         />
 
         {righeFattura.map((riga) => (

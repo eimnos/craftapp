@@ -48,7 +48,7 @@ const styleAnagrafica = {
 function Fatture() {
   const [fatture, setFatture] = useState([]);
   const [openForm, setOpenForm] = useState(false);
-  const [openAnagraficaForm, setOpenAnagraficaForm] = useState(false); // Stato per la modale dell'anagrafica
+  const [openAnagraficaForm, setOpenAnagraficaForm] = useState(false);
   const [filtri, setFiltri] = useState({});
   const [ordinamento, setOrdinamento] = useState({
     colonna: null,
@@ -58,16 +58,17 @@ function Fatture() {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const [user] = useAuthState(auth);
+  const [tipiFattura, setTipiFattura] = useState([]);
 
   const bottoniFatture = [
     {
       label: "Nuova Fattura",
-      onClick: () => setOpenForm(true), // Apri il form
+      onClick: () => setOpenForm(true),
     },
     {
       label: "Nuova Anagrafica",
-      onClick: () => setOpenAnagraficaForm(true), // Apri la modale per l'anagrafica
-    }
+      onClick: () => setOpenAnagraficaForm(true),
+    },
   ];
 
   useEffect(() => {
@@ -81,8 +82,6 @@ function Fatture() {
 
         const fattureSnapshot = await getDocs(q);
 
-        console.log(fattureSnapshot.docs)
-
         // Recupera tutte le righe dal database
         const righeRef = collection(db, "righeFattura");
         const righeSnapshot = await getDocs(righeRef);
@@ -91,19 +90,37 @@ function Fatture() {
           ...doc.data(),
         }));
 
+        // Recupera i tipi di fattura dal database
+        const tipiFatturaRef = collection(db, "tipiFattura");
+        const tipiFatturaSnapshot = await getDocs(tipiFatturaRef);
+        const tipiFatturaData = tipiFatturaSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // Crea un oggetto per accedere ai tipi di fattura per ID
+        const tipiFatturaById = tipiFatturaData.reduce((acc, tipo) => {
+          acc[tipo.id] = tipo;
+          return acc;
+        }, {});
+
         const fattureData = await Promise.all(
           fattureSnapshot.docs.map(async (docSnapshot) => {
             const fatturaData = docSnapshot.data();
-            const tipoFatturaRef = doc(db, "tipiFattura", fatturaData.tipo);
-            const tipoFatturaSnapshot = await getDoc(tipoFatturaRef);
-            const tipoFatturaData = tipoFatturaSnapshot.data();
+
+            // Ottieni il tipo di fattura usando l'ID
+            const tipoFattura = tipiFatturaById[fatturaData.tipo];
+
+            // Recupera il cliente dalla tabella anagrafiche
+            const clienteRef = fatturaData.cliente;
+            const clienteSnapshot = await getDoc(clienteRef);
+            const clienteData = clienteSnapshot.data();
 
             // Filtra le righe per la fattura corrente
-            const righeFattura = righeData.filter(
-              (riga) => {const fatturaId = riga.fatturaId.id; // Ottieni l'ID dalla proprietà id
-                return fatturaId === docSnapshot.id;
-              }
-            );
+            const righeFattura = righeData.filter((riga) => {
+              const fatturaId = riga.fatturaId.id;
+              return fatturaId === docSnapshot.id;
+            });
 
             // Calcola i totali per la fattura corrente
             const totaleNetto = righeFattura.reduce(
@@ -118,10 +135,13 @@ function Fatture() {
             return {
               id: docSnapshot.id,
               ...fatturaData,
-              descrizioneTipo:
-                tipoFatturaData?.Descrizione || "Tipo non trovato",
+              descrizioneTipo: tipoFattura
+                ? tipoFattura.Descrizione
+                : "Tipo non trovato",
               totaleNetto,
               totaleLordo,
+              clienteDescrizione:
+                clienteData?.descrizione || "Cliente non trovato",
             };
           }),
         );
@@ -209,7 +229,8 @@ function Fatture() {
         aria-labelledby="modal-anagrafica-title"
         aria-describedby="modal-anagrafica-description"
       >
-        <Box sx={styleAnagrafica}> {/* Definisci lo stile per la modale */}
+        <Box sx={styleAnagrafica}>
+          {/* Definisci lo stile per la modale */}
           <AnagraficaForm onClose={() => setOpenAnagraficaForm(false)} />
         </Box>
       </Modal>
@@ -351,7 +372,7 @@ function Fatture() {
               <TableRow key={fattura.id}>
                 <TableCell>{fattura.numeroFattura}</TableCell>
                 <TableCell>{fattura.dataEmissione}</TableCell>
-                <TableCell>{fattura.cliente}</TableCell>
+                <TableCell>{fattura.clienteDescrizione}</TableCell>
                 <TableCell>{fattura.descrizioneTipo}</TableCell>
                 <TableCell>{fattura.totaleNetto.toFixed(2)}</TableCell>
                 <TableCell>{fattura.totaleLordo.toFixed(2)}</TableCell>
