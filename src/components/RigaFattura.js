@@ -7,9 +7,26 @@ import {
   FormControl,
   InputLabel,
   Box,
+  Autocomplete,
+  IconButton,
+  Modal
 } from "@mui/material";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
+import AddIcon from "@mui/icons-material/Add"; // Icona per il bottone "+"
+import CreaArticoloForm from "./CreaArticoloForm";
+
+const style = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: 400,
+  bgcolor: 'background.paper',
+  border: '2px solid #000',
+  boxShadow: 24,
+  p: 4,
+};
 
 function RigaFattura({ riga, onRigaChange, onRigaDelete }) {
   const [articoli, setArticoli] = useState([]);
@@ -17,6 +34,8 @@ function RigaFattura({ riga, onRigaChange, onRigaDelete }) {
   const [descrizioneArticolo, setDescrizioneArticolo] = useState(
     riga.descrizioneArticolo || ""
   );
+  const [openCreaArticoloModal, setOpenCreaArticoloModal] = useState(false);
+  const [articoloSelezionato, setArticoloSelezionato] = useState(null);
 
   useEffect(() => {
     const fetchArticoli = async () => {
@@ -36,36 +55,50 @@ function RigaFattura({ riga, onRigaChange, onRigaDelete }) {
     fetchArticoli();
   }, []);
 
-  const handleArticoloChange = (event) => {
-    const articoloSelezionato = articoli.find(
-      (articolo) => articolo.codice === event.target.value,
-    );
-    if (articoloSelezionato) {
-      // Se l'articolo è presente nel database, usa i suoi dati
+  const handleArticoloChange = (event, newValue) => {
+    setArticoloSelezionato(newValue);
+    if (newValue) {
       onRigaChange({
         ...riga,
-        articoloId: event.target.value,
-        codiceArticolo: articoloSelezionato.codice,
-        descrizioneArticolo: articoloSelezionato.descrizione,
-        prezzoNetto: articoloSelezionato.prezzoNetto,
-        iva: articoloSelezionato.iva,
-        prezzoLordo: Number (
-          articoloSelezionato.prezzoNetto *
-          (1 + articoloSelezionato.iva / 100)), // Prezzo lordo unitario
+        articoloId: newValue.id, // Imposta l'ID dell'articolo selezionato
+        codiceArticolo: newValue.codice,
+        descrizioneArticolo: newValue.descrizione,
+        prezzoNetto: newValue.prezzoNetto,
+        iva: newValue.iva,
+        prezzoLordo: newValue.prezzoNetto * (1 + newValue.iva / 100),
       });
-      setCodiceArticolo(articoloSelezionato.codice);
-      setDescrizioneArticolo(articoloSelezionato.descrizione);
     } else {
-      // Altrimenti, usa i dati inseriti manualmente
+      // Reimposta i campi della riga se nessun articolo è selezionato
       onRigaChange({
         ...riga,
-        articoloId: null, // Nessun articoloId se inserito manualmente
-        codiceArticolo: codiceArticolo,
-        descrizioneArticolo: descrizioneArticolo,
-        prezzoLordo: Number (
-          parseFloat(riga.prezzoNetto) * (1 + parseFloat(riga.iva) / 100)) || 0, // Conversione a numero
+        articoloId: null,
+        codiceArticolo: "",
+        descrizioneArticolo: "",
+        prezzoNetto: 0,
+        iva: 0,
+        prezzoLordo: 0,
       });
     }
+  };
+
+  const handleCreaArticolo = (articoloId) => {
+    // Aggiorna la riga con l'articolo appena creato
+    const articoloCreato = articoli.find((a) => a.id === articoloId);
+    setArticoloSelezionato(articoloCreato);
+    onRigaChange({
+      ...riga,
+      articoloId: articoloId,
+      codiceArticolo: articoloCreato.codice,
+      descrizioneArticolo: articoloCreato.descrizione,
+      prezzoNetto: articoloCreato.prezzoNetto,
+      iva: articoloCreato.iva,
+      prezzoLordo:
+        articoloCreato.prezzoNetto * (1 + articoloCreato.iva / 100),
+    });
+  };
+
+  const handleCloseCreaArticoloModal = () => {
+    setOpenCreaArticoloModal(false);
   };
 
   const handleQuantitaChange = (event) => {
@@ -101,41 +134,37 @@ function RigaFattura({ riga, onRigaChange, onRigaDelete }) {
 
   return (
     <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-      <FormControl sx={{ minWidth: 120, mr: 2 }}>
-        <InputLabel id="articolo-label">Articolo</InputLabel>
-        <Select
-          labelId="articolo-label"
-          id="articolo"
-          label="Articolo"
-          value={riga.articoloId || ""} // Aggiunto controllo per valore vuoto
-          onChange={handleArticoloChange}
-        >
-          {articoli.map((articolo) => (
-            <MenuItem key={articolo.id} value={articolo.id}>
-              {articolo.codice} - {articolo.descrizione}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <Autocomplete
+        options={articoli}
+        getOptionLabel={(articolo) =>
+          `${articolo.codice} - ${articolo.descrizione}`
+        }
+        value={articoloSelezionato}
+        onChange={handleArticoloChange}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Articolo"
+            sx={{ mr: 2, width: 200 }}
+          />
+        )}
+      />
 
-      <TextField
-        label="Codice Articolo"
-        value={codiceArticolo}
-        onChange={(e) => {
-          setCodiceArticolo(e.target.value);
-          onRigaChange({ ...riga, codiceArticolo: e.target.value });
-        }}
-        sx={{ mr: 2, width: 100 }}
-      />
-      <TextField
-        label="Descrizione Articolo"
-        value={descrizioneArticolo}
-        onChange={(e) => {
-          setDescrizioneArticolo(e.target.value);
-          onRigaChange({ ...riga, descrizioneArticolo: e.target.value });
-        }}
-        sx={{ mr: 2, width: 200 }}
-      />
+      <IconButton onClick={() => setOpenCreaArticoloModal(true)}>
+        <AddIcon />
+      </IconButton>
+
+      <Modal
+        open={openCreaArticoloModal}
+        onClose={() => setOpenCreaArticoloModal(false)}
+      >
+        <Box sx={style}> {/* Definisci lo stile per la modale */}
+          <CreaArticoloForm
+            onClose={handleCloseCreaArticoloModal}
+            onArticoloCreato={handleCreaArticolo} // Funzione per gestire l'articolo creato
+          />
+        </Box>
+      </Modal>
 
       <TextField
         label="Quantità"

@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { formFieldStyle } from "../formStyles";
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { db, auth } from "../firebase"; 
 import { useAuthState } from 'react-firebase-hooks/auth';
 // ... (eventuali import per il servizio di ricerca indirizzo) ...
@@ -41,6 +41,32 @@ function AnagraficaForm({ onClose }) {
     event.preventDefault();
     
     try {
+      // Verifica se esiste già un'anagrafica con lo stesso codice
+      const codiceQuery = query(collection(db, "anagrafiche"), where("codice", "==", codice));
+      const codiceSnapshot = await getDocs(codiceQuery);
+
+      if (!codiceSnapshot.empty) {
+        // Esiste già un'anagrafica con lo stesso codice
+        alert("Esiste già un'anagrafica con questo codice.");
+        return;
+      }
+
+      // Verifica se esiste già un'anagrafica con la stessa partita IVA (se dello stesso tipo)
+      if (partitaIva) {
+        const partitaIvaQuery = query(
+          collection(db, "anagrafiche"),
+          where("partitaIva", "==", partitaIva),
+          where("tipo", "==", tipo)
+        );
+        const partitaIvaSnapshot = await getDocs(partitaIvaQuery);
+
+        if (!partitaIvaSnapshot.empty) {
+          // Esiste già un'anagrafica con la stessa partita IVA e dello stesso tipo
+          alert("Esiste già un'anagrafica con questa partita IVA e dello stesso tipo.");
+          return;
+        }
+      }
+
       // Crea un oggetto con i dati da inviare
       const nuovaAnagrafica = {
         tipo,
